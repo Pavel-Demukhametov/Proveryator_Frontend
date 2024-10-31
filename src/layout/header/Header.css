@@ -1,0 +1,19 @@
+.gradient-text {
+    background: linear-gradient(90deg, #6996ff, #aa43ff, #ff80f9, #6996ff);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-slide-right 10s linear infinite;
+  }
+  
+  @keyframes gradient-slide-right {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  header {
+    z-index: 1000; 
+  }

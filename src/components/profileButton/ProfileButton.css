@@ -1,0 +1,14 @@
+.profile-button {
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+  
+  .profile-image {
+    height: 8px;
+    width: 8px;
+  }
+  
+  .invert {
+    filter: invert(1);
+  }
