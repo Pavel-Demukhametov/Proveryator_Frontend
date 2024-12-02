@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import MiniLoadingSpinner from '../../components/loading/MiniLoadingSpinner';
 import { useNavigate, useLocation } from 'react-router-dom';
-import CustomRadio from '../../components/сustomRadio/CustomRadio';
-import CustomCheckbox from '../../components/сustomCheckbox/CustomCheckbox';
 import { ToastContainer, toast } from 'react-toastify';
+import CustomCheckbox from '../../components/сustomCheckbox/CustomCheckbox';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CreateTestPage = () => {
-  const location = useLocation(); // Получение данных от предыдущей страницы
+  const location = useLocation();
   const navigate = useNavigate();
 
-  // Данные от предыдущей страницы
   const lectureData = location.state;
 
-  // Логика обработки данных от предыдущей страницы
   useEffect(() => {
     if (lectureData) {
       console.log('Полученные данные от предыдущей страницы:', lectureData);
@@ -26,24 +21,24 @@ const CreateTestPage = () => {
   const [testTitle, setTestTitle] = useState('');
   const [creationMethod, setCreationMethod] = useState('general');
   const [totalQuestions, setTotalQuestions] = useState('');
-  const [themes, setThemes] = useState([
-    {
-      id: 1,
-      title: '',
-      description: `Классификация текста...`,
-      isIncluded: false,
-      questionCount: '',
-    },
-    {
-      id: 2,
-      title: '',
-      description: `Тема классификации объектов...`,
-      isIncluded: false,
-      questionCount: '',
-    },
-    // Дополнительные темы можно добавить здесь...
-  ]);
+  const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [multipleChoiceCount, setMultipleChoiceCount] = useState('');
+  const [openAnswerCount, setOpenAnswerCount] = useState('');
+
+  useEffect(() => {
+    if (lectureData && lectureData.results && Array.isArray(lectureData.segments)) {
+      const extractedThemes = lectureData.segments.map((segment) => ({
+        keyword: segment.keyword,
+        sentences: segment.sentences,
+        isIncluded: false,
+        multipleChoiceCount: '',  // Количество вопросов с одним правильным ответом
+        openAnswerCount: '',      // Количество вопросов с открытым ответом
+        relatedSentences: segment.sentences.join('\n'),
+      }));
+      setThemes(extractedThemes);
+    }
+  }, [lectureData]);
 
   const handleCreationMethodChange = (e) => {
     setCreationMethod(e.target.value);
@@ -56,49 +51,98 @@ const CreateTestPage = () => {
       }))
     );
   };
+const handleMultipleChoiceCountChange = (e) => {
+  const value = e.target.value;
+  if (value === '' || (/^\d+$/.test(value) && parseInt(value, 10) >= 1)) {
+    setMultipleChoiceCount(value);
+  } else {
+    setMultipleChoiceCount('1'); // Если меньше 1, ставим 1
+  }
+};
+
+const handleOpenAnswerCountChange = (e) => {
+  const value = e.target.value;
+  if (value === '' || (/^\d+$/.test(value) && parseInt(value, 10) >= 1)) {
+    setOpenAnswerCount(value);
+  } else {
+    setOpenAnswerCount('1'); // Если меньше 1, ставим 1
+  }
+};
 
   const handleThemeToggle = (id) => {
     setThemes((prevThemes) =>
       prevThemes.map((theme) =>
-        theme.id === id
+        theme.keyword === id
           ? { ...theme, isIncluded: !theme.isIncluded, questionCount: theme.isIncluded ? '' : theme.questionCount }
           : theme
       )
     );
   };
 
-  const handleThemeQuestionCountChange = (id, count) => {
-    if (count === '' || (/^\d+$/.test(count) && parseInt(count, 10) > 0)) {
+  const handleThemeQuestionCountChange = (id, count, type) => {
+    if (count === '' || (/^\d+$/.test(count) && parseInt(count, 10) >= 1)) {
       setThemes((prevThemes) =>
         prevThemes.map((theme) =>
-          theme.id === id ? { ...theme, questionCount: count } : theme
+          theme.keyword === id
+            ? { ...theme, [type]: count } // Обновляем только соответствующее поле для темы
+            : theme
+        )
+      );
+    } else {
+      setThemes((prevThemes) =>
+        prevThemes.map((theme) =>
+          theme.keyword === id
+            ? { ...theme, [type]: '1' } // Если значение меньше 1, ставим 1
+            : theme
         )
       );
     }
   };
 
+  const handleTotalQuestionsChange = (e) => {
+    const value = e.target.value;
+    // Проверяем, что введённое значение больше или равно 1
+    if (value === '' || (/^\d+$/.test(value) && parseInt(value, 10) >= 1)) {
+      setTotalQuestions(value);
+    } else {
+      // Если значение меньше 1, устанавливаем 1
+      setTotalQuestions('1');
+    }
+  };
+
+  const handleRelatedSentencesChange = (id, value) => {
+    setThemes((prevThemes) =>
+      prevThemes.map((theme) =>
+        theme.keyword === id ? { ...theme, relatedSentences: value } : theme
+      )
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
   
+    // Проверка на название теста
     if (!testTitle.trim()) {
       toast.error('Пожалуйста, введите название теста.');
       return;
     }
   
-    if (creationMethod === 'general') {
-      if (!totalQuestions || isNaN(totalQuestions) || parseInt(totalQuestions, 10) <= 0) {
-        toast.error('Пожалуйста, введите корректное количество вопросов.');
-        return;
-      }
-    } else if (creationMethod === 'byThemes') {
+    // Проверка на корректность данных, если выбран метод 'byThemes'
+    if (creationMethod === 'byThemes') {
       const selectedThemes = themes.filter((theme) => theme.isIncluded);
       if (selectedThemes.length === 0) {
         toast.error('Пожалуйста, выберите хотя бы одну тему.');
         return;
       }
+  
       for (let theme of selectedThemes) {
-        if (!theme.questionCount || isNaN(theme.questionCount) || parseInt(theme.questionCount, 10) <= 0) {
-          toast.error(`Введите корректное количество вопросов для темы "${theme.title}".`);
+        if (!theme.multipleChoiceCount || isNaN(theme.multipleChoiceCount) || parseInt(theme.multipleChoiceCount, 10) <= 0) {
+          toast.error(`Введите корректное количество вопросов с одним правильным ответом для темы "${theme.keyword}".`);
+          return;
+        }
+  
+        if (!theme.openAnswerCount || isNaN(theme.openAnswerCount) || parseInt(theme.openAnswerCount, 10) <= 0) {
+          toast.error(`Введите корректное количество вопросов с открытым ответом для темы "${theme.keyword}".`);
           return;
         }
       }
@@ -109,30 +153,47 @@ const CreateTestPage = () => {
     try {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Убедитесь, что токен есть
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       };
+  
+      // Формируем данные для отправки
+      const selectedThemes = themes.filter((theme) => theme.isIncluded).map((theme) => ({
+        keyword: theme.keyword,
+        sentences: theme.relatedSentences,
+        multipleChoiceCount: theme.multipleChoiceCount,  // Количество вопросов с одним правильным ответом
+        openAnswerCount: theme.openAnswerCount,        // Количество вопросов с открытым ответом
+      }));
   
       const payload = {
         method: creationMethod,
         title: testTitle,
         totalQuestions: creationMethod === 'general' ? parseInt(totalQuestions, 10) : undefined,
-        themes: creationMethod === 'byThemes' ? themes.filter((theme) => theme.isIncluded) : undefined,
+        multipleChoiceCount: creationMethod === 'general' ? parseInt(multipleChoiceCount, 10) : undefined,
+        openAnswerCount: creationMethod === 'general' ? parseInt(openAnswerCount, 10) : undefined,
+        themes: creationMethod === 'byThemes' ? selectedThemes : undefined, // Отправляем темы с их количеством вопросов
         lectureMaterials: lectureData ? lectureData.materials : undefined,
       };
   
-      console.log('Отправляемый payload:', payload);
+      console.log(payload);
   
-      const response = await axios.post('http://127.0.0.1:8000/api/tests/create/', payload, { headers });
+      // Отправка данных на сервер
+      const response = await fetch('http://127.0.0.1:8000/api/tests/create/', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+      });
   
-      toast.success('Тест успешно создан!');
-      setTimeout(() => {
-        navigate(`/test/${response.data.testId}`); // Перенаправление на страницу теста
-      }, 1500);
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Тест успешно создан!');
+        navigate('/tests');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Не удалось создать тест. Пожалуйста, попробуйте снова.');
+      }
     } catch (error) {
       console.error('Ошибка при создании теста:', error);
-      toast.error(
-        error.response?.data?.detail || 'Не удалось создать тест. Пожалуйста, попробуйте снова.'
-      );
+      toast.error(error.message || 'Не удалось создать тест. Пожалуйста, попробуйте снова.');
     } finally {
       setLoading(false);
     }
@@ -167,17 +228,7 @@ const CreateTestPage = () => {
           />
         </div>
 
-        {/* Текст лекции */}
-        <div className="mb-6">
-          <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-            Текст лекции:
-          </label>
-          <textarea
-            className="w-full h-64 px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-not-allowed"
-            value={lectureData ? lectureData.materials : ''}
-            readOnly
-          />
-        </div>
+        {/* Метод создания теста */}
         <div className="mb-6">
           <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
             Метод создания теста:
@@ -207,111 +258,112 @@ const CreateTestPage = () => {
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{getHintText()}</p>
         </div>
 
+        {/* Темы */}
+        {creationMethod === 'byThemes' && (
+  <div className="mb-6 space-y-4">
+    <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">Темы теста:</label>
+    {themes.map((theme) => (
+  <div key={theme.keyword} className="border  border-gray-300 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+    <div className="flex flex-col space-y-5">
+      <div className="flex items-center space-x-2">
+        <CustomCheckbox
+          id={`theme-${theme.keyword}`}
+          checked={theme.isIncluded}
+          onChange={() => handleThemeToggle(theme.keyword)}
+          label={theme.keyword}
+        />
+      </div>
+      <textarea
+        value={theme.relatedSentences}
+        onChange={(e) => handleRelatedSentencesChange(theme.keyword, e.target.value)}
+        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        placeholder="Связанные предложения"
+      />
+      {theme.isIncluded && (
+        <div className="space-y-2 mt-2">
+<div className="mb-6">
+  <label htmlFor="multipleChoiceCount" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
+    Количество вопросов с одним правильным ответом:
+  </label>
+  <input
+    type="number"
+    id="multipleChoiceCount"
+    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+    placeholder="Введите количество вопросов"
+    value={theme.multipleChoiceCount}
+    onChange={(e) => handleThemeQuestionCountChange(theme.keyword, e.target.value, 'multipleChoiceCount')}
+  />
+</div>
+
+<div className="mb-6">
+  <label htmlFor="openAnswerCount" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
+    Количество вопросов с открытым ответом:
+  </label>
+  <input
+    type="number"
+    id="openAnswerCount"
+    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+    placeholder="Введите количество вопросов"
+    value={theme.openAnswerCount}
+    onChange={(e) => handleThemeQuestionCountChange(theme.keyword, e.target.value, 'openAnswerCount')}
+/>
+</div>
+        </div>
+      )}
+    </div>
+  </div>
+))}
+  </div>
+)}
+
+        {/* Общее количество вопросов */}
         {creationMethod === 'general' && (
           <div className="mb-6">
-            <label htmlFor="totalQuestions" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-              Количество вопросов:
-            </label>
-            <input
-              type="number"
-              id="totalQuestions"
-              name="totalQuestions"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-              placeholder="Введите количество вопросов"
-              value={totalQuestions}
-              onChange={(e) => setTotalQuestions(e.target.value)}
-              min="1"
-              step="1"
-              required
-            />
+<div className="mb-6">
+  <label htmlFor="multipleChoiceCount" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
+    Количество вопросов с одним правильным ответом:
+  </label>
+  <input
+    type="number"
+    id="multipleChoiceCount"
+    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+    placeholder="Введите количество вопросов"
+    value={multipleChoiceCount}
+    onChange={handleMultipleChoiceCountChange}
+  />
+</div>
+
+<div className="mb-6">
+  <label htmlFor="openAnswerCount" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
+    Количество вопросов с открытым ответом:
+  </label>
+  <input
+    type="number"
+    id="openAnswerCount"
+    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+    placeholder="Введите количество вопросов"
+    value={openAnswerCount}
+    onChange={handleOpenAnswerCountChange}
+  />
+</div>
           </div>
         )}
-        {/* Форма для выбора тем */}
-        {creationMethod === 'byThemes' && (
-          <div className="mb-6">
-            <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-              Выберите сегменты для теста:
-            </label>
-            <div className="space-y-4">
-              {themes.map((theme) => (
-                <div key={theme.id} className="p-4 border rounded-md dark:border-gray-600 bg-gray-50 dark:bg-gray-700 w-full">
-                  <div className="flex flex-col w-full justify-between">
-                    <div className="w-full">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{theme.title}</h3>
-                      
-                      {/* Многострочное поле для описания */}
-                      <textarea
-                        className="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                        rows="5"
-                        value={theme.description}
-                        readOnly
-                      ></textarea>
-                    </div>
-                    <div className="mt-4 w-full">
-                      <CustomCheckbox
-                        id={`theme-${theme.id}`}
-                        checked={theme.isIncluded}
-                        onChange={() => handleThemeToggle(theme.id)}
-                        label="Включить"
-                      />
-                    </div>
-                  </div>
-                  {theme.isIncluded && (
-                    <div className="mt-4 w-full">
-                      <label htmlFor={`questionCount-${theme.id}`} className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-                        Количество вопросов с одним правильным ответом для этой темы:
-                      </label>
-                      <input
-                        type="number"
-                        id={`questionCount-${theme.id}`}
-                        name={`questionCount-${theme.id}`}
-                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Введите количество вопросов"
-                        value={theme.questionCount}
-                        onChange={(e) => handleThemeQuestionCountChange(theme.id, e.target.value)}
-                        min="1"
-                        step="1"
-                        required
-                      />
-                      <label htmlFor={`questionCount-${theme.id}`} className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-                        Количество вопросов с открытым ответом для этой темы:
-                      </label>
-                      <input
-                        type="number"
-                        id={`questionCount-${theme.id}`}
-                        name={`questionCount-${theme.id}`}
-                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Введите количество вопросов"
-                        value={theme.questionCount}
-                        onChange={(e) => handleThemeQuestionCountChange(theme.id, e.target.value)}
-                        min="1"
-                        step="1"
-                        required
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Кнопка создания теста */}
-        <div className="flex justify-center">
-          {loading ? (
-            <MiniLoadingSpinner />
-          ) : (
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              Создать тест
-            </button>
-          )}
+
+        {/* Кнопка отправки */}
+        <div className="text-center">
+          <button
+            type="submit"
+            className={`w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          > ${
+              loading ? 'cursor-not-allowed opacity-50' : ''
+            }`}
+            disabled={loading}
+          >
+            {loading ? 'Создаю тест...' : 'Создать тест'}
+          </button>
         </div>
       </form>
-
-      {/* Контейнер для уведомлений */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <ToastContainer />
     </div>
   );
 };
