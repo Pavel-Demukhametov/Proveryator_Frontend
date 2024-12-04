@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+// SignUpPage.js
+
+import React, { useState } from 'react';
 import axios from 'axios';
 import InputField from '../../components/inputField/InputField';
 import SubmitButton from '../../components/submitButton/submitButton';
@@ -9,74 +11,60 @@ import 'react-toastify/dist/ReactToastify.css';
 const SignUpPage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState({
-    surname: '',
-    name: '',
-    patronymic: '',
+    username: '',
     email: '',
-    direction: '',
-    course: '',
     password: '',
   });
-
-  const [directions, setDirections] = useState([]);
-  const [courses, setCourses] = useState([]);
-
-  useEffect(() => {
-    axios.get('http://127.0.0.1:8000/api/registration/')
-      .then(response => {
-        if (response.data) {
-          setDirections(response.data.directions);
-          setCourses(response.data.courses);
-        }
-      }).catch(error => {
-        console.error("Ошибка при получении данных:", error);
-      });
-  }, []);
 
   const handleInputChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = (email, password) => {
-    axios.post('http://127.0.0.1:8000/api/auth/login', { email, password })
+  const handleLogin = (email, password) => { // Изменены параметры на email и password
+    axios.post('http://127.0.0.1:5000/api/login/', { email, password }) // Изменен URL
       .then(response => {
-        const { access, refresh, user } = response.data;
-        const { role } = user;
-        localStorage.setItem('accessToken', access);
-        localStorage.setItem('refreshToken', refresh);
-        localStorage.setItem('userRole', role); 
+        const { access_token, token_type } = response.data;
+        localStorage.setItem('accessToken', access_token);
+        localStorage.setItem('tokenType', token_type); 
+        toast.success("Вход выполнен успешно!");
         navigate('/'); 
       })
       .catch(error => {
-        toast.error("Ошибка при входе");
+        let errorMessage = "Ошибка при входе";
+        if (error.response && error.response.data && error.response.data.detail) {
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage = error.response.data.detail.map(d => `${d.loc.join('.')} - ${d.msg}`).join("\n");
+          } else {
+            errorMessage = error.response.data.detail;
+          }
+        }
+        toast.error(errorMessage);
         console.error("Ошибка входа:", error);
       });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const requestData = {
-      full_name: `${userData.surname} ${userData.name} ${userData.patronymic}`,
-      email: userData.email,
-      password: userData.password,
-      course: Number(userData.course),
-      direction: Number(userData.direction),
 
+    const requestData = {
+      username: userData.username.trim(),
+      email: userData.email.trim(),
+      password: userData.password,
     };
 
-    axios.post('http://127.0.0.1:8000/api/registration/', requestData)
+    axios.post('http://127.0.0.1:5000/api/register/', requestData) // Изменен порт
       .then(response => {
         if (response.status === 201) {
           toast.success("Регистрация прошла успешно!");
-          handleLogin(userData.email, userData.password);
+          handleLogin(userData.email, userData.password); // Передаем email
         } else {
-          toast.error(response.data.message || "Ошибка регистрации");
+          toast.error(response.data.detail || "Ошибка регистрации");
         }
       })
       .catch(error => {
         let errorMessage = "Произошла ошибка при регистрации!";
-        if (error.response && error.response.data && error.response.data.email) {
-          errorMessage = error.response.data.email.join(' ');
+        if (error.response && error.response.data && error.response.data.detail) {
+          errorMessage = error.response.data.detail;
         }
         toast.error(errorMessage);
         console.error("Ошибка регистрации:", error);
@@ -90,8 +78,8 @@ const SignUpPage = () => {
         <main className="mt-[10%] w-full h-[100vh] ">
           <form className="max-w-[400px] mx-auto p-5 shadow-xl rounded-xl " onSubmit={handleSubmit}>
             <InputField label="Email" name="email" type="email" required value={userData.email} onChange={handleInputChange} />
+            <InputField label="Логин" name="username"  type="text" required  value={userData.username} onChange={handleInputChange}  />
             <InputField label="Пароль" name="password" type="password" required value={userData.password} onChange={handleInputChange} />
-
             <button type="submit" className="w-full  bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300 p-2.5">Зарегистрироваться</button>
           </form>
         </main>
@@ -101,4 +89,3 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
-           

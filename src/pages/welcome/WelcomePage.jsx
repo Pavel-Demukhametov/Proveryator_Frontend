@@ -50,16 +50,13 @@ const WelcomePage = () => {
               <div className="flex flex-col gap-2 pt-6 w-full md:w-1/2  ">
 
 
-                {/* {!isAuthenticated && (
+                {isAuthenticated && (
                    <div className="flex justify-between items-center gap-2">
-                    <a href="/upload" className="flex-grow no-underline text-center text-xl sm:text-[20px] md:text-[20px] px-6 py-3 bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300">
-                      Создать тест
-                    </a>
                     <a href="/tests" className=" flex-grow no-underline text-center  text-xl sm:text-[20px] md:text-[20px] px-6 py-3 bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300">
                       Мои тесты
                     </a>
                  </div>
-                  )} */}
+                  )}
                                      <div className="flex justify-between items-center gap-2">
                                      <a href="/upload" className="flex-grow no-underline text-center text-xl sm:text-[20px] md:text-[20px] px-6 py-3 bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300">
                                        Создать тест

@@ -18,13 +18,11 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:8000/api/auth/login', loginData)
+    axios.post('http://127.0.0.1:5000/api/login', loginData)
     .then(response => {
-      const { access, refresh, user } = response.data; 
-      const { role } = user; 
+      const { access, refresh } = response.data; 
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
-      localStorage.setItem('userRole', role);
       toast.success("Вход выполнен успешно!");
       navigate('/');
     })

@@ -60,7 +60,7 @@ const UploadLecturePage = () => {
       formData.append('materials', lectureMaterials.trim());
 
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/upload/',
+        'http://127.0.0.1:5000/api/upload',
         formData,
         { headers }
       );
