@@ -1,7 +1,9 @@
+// src/pages/CreateTestPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import CustomCheckbox from '../../components/сustomCheckbox/CustomCheckbox';
+import CustomCheckbox from '../../components/customCheckbox/CustomCheckbox';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CreateTestPage = () => {
@@ -197,7 +199,8 @@ const CreateTestPage = () => {
       if (response.ok) {
         const result = await response.json();
         toast.success('Тест успешно создан!');
-        navigate('/tests');
+        // Предполагается, что сервер возвращает созданный тест в поле `test`
+        navigate('/tests/edit', { state: result });
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Не удалось создать тест. Пожалуйста, попробуйте снова.');

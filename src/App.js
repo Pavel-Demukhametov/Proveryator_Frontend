@@ -10,7 +10,7 @@ import CreateTestPage from './pages/createTest/CreateTestPage';
 import Catalog from './pages/projectCatalog/ProjectCatalogPage';
 import TestCatalogPage from './pages/testsCatalog/TestCatalogPage';
 import TestInfoPage from './pages/testInfo/TestInfoPage';
-
+import EditTestPage from './pages/editTest/EditTestPage';
 
 
 const requireAuthAndRole = (component, role) => {
@@ -41,6 +41,7 @@ function App() {
             <Route path="upload/"element={ <UploadLecturePage/>} />
             <Route path="create/test"element={ <CreateTestPage/>} />
             <Route path="tests"element={ <TestCatalogPage/>} />
+            <Route path="/tests/edit" element={<EditTestPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
