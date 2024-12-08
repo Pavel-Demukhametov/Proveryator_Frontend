@@ -1,3 +1,5 @@
+// src/pages/LoginPage.jsx
+
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -18,16 +20,25 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:5000/api/login', loginData)
+    axios.post('http://127.0.0.1:5000/api/login/', loginData) // Добавлен слэш
     .then(response => {
-      const { access, refresh } = response.data; 
-      localStorage.setItem('accessToken', access);
-      localStorage.setItem('refreshToken', refresh);
+      const { access_token, refresh_token, token_type } = response.data; 
+      localStorage.setItem('accessToken', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refreshToken', refresh_token);
+      }
+      if (token_type) {
+        localStorage.setItem('tokenType', token_type);
+      }
       toast.success("Вход выполнен успешно!");
       navigate('/');
     })
     .catch(error => {
-      toast.error("Произошла ошибка при входе!");
+      let errorMessage = "Произошла ошибка при входе!";
+      if (error.response && error.response.data && error.response.data.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      toast.error(errorMessage);
       console.error("Ошибка входа:", error);
     });
   };

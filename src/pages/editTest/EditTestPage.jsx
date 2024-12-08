@@ -11,19 +11,31 @@ const EditTestPage = () => {
 
   const existingTest = location.state;
 
+  // Проверка наличия accessToken в localStorage
+  const isLoggedIn = !!localStorage.getItem('accessToken');
+
   useEffect(() => {
     if (existingTest) {
       console.log('Полученные данные теста для редактирования:', existingTest);
+      // Проверка, что lectureMaterials является массивом
+      if (!Array.isArray(existingTest.lectureMaterials)) {
+        console.warn('lectureMaterials не является массивом. Инициализируем как пустой массив.');
+        setLectureMaterials([]);
+      }
     } else {
       console.error('Данные теста для редактирования отсутствуют.');
       toast.error('Данные теста отсутствуют.');
-      navigate('/tests');  // Перенаправление в случае отсутствия данных теста
+      navigate('/tests'); // Перенаправление в случае отсутствия данных теста
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingTest, navigate]);
 
+  // Инициализация состояний
   const [testTitle, setTestTitle] = useState(existingTest?.title || '');
   const [questions, setQuestions] = useState(existingTest?.questions || []);
-  const [lectureMaterials, setLectureMaterials] = useState(existingTest?.lectureMaterials || []);
+  const [lectureMaterials, setLectureMaterials] = useState(
+    Array.isArray(existingTest?.lectureMaterials) ? existingTest.lectureMaterials : []
+  );
   const [loading, setLoading] = useState(false);
 
   // Обработчики для изменения названия теста
@@ -77,7 +89,7 @@ const EditTestPage = () => {
   // Обработчики для добавления, изменения и удаления вариантов ответов
   const handleOptionChange = (qIndex, optIndex, value) => {
     const updatedQuestions = questions.map((q, idx) => {
-      if (idx === qIndex && q.type === 'mc' && q.options) {
+      if (idx === qIndex && q.type === 'mc' && Array.isArray(q.options)) {
         const updatedOptions = q.options.map((opt, oIdx) => {
           if (oIdx === optIndex) {
             return value;
@@ -94,7 +106,7 @@ const EditTestPage = () => {
   const handleAddOption = (qIndex) => {
     const updatedQuestions = questions.map((q, idx) => {
       if (idx === qIndex && q.type === 'mc') {
-        return { ...q, options: [...q.options, ''] };
+        return { ...q, options: [...(q.options || []), ''] };
       }
       return q;
     });
@@ -103,7 +115,7 @@ const EditTestPage = () => {
 
   const handleRemoveOption = (qIndex, optIndex) => {
     const updatedQuestions = questions.map((q, idx) => {
-      if (idx === qIndex && q.type === 'mc' && q.options) {
+      if (idx === qIndex && q.type === 'mc' && Array.isArray(q.options)) {
         const updatedOptions = q.options.filter((_, oIdx) => oIdx !== optIndex);
         return { ...q, options: updatedOptions };
       }
@@ -141,7 +153,7 @@ const EditTestPage = () => {
         return {
           ...q,
           question: '', // Пустой вопрос
-          answer: '',   // Пустой правильный ответ
+          answer: '', // Пустой правильный ответ
           options: q.type === 'mc' ? ['', '', ''] : null, // Пустые варианты для множественного выбора
         };
       }
@@ -150,10 +162,14 @@ const EditTestPage = () => {
     setQuestions(updatedQuestions);
   };
 
-  // Отправка формы
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Обработчик сохранения теста (только для авторизованных пользователей)
+  const handleSave = async () => {
+    if (!isLoggedIn) {
+      toast.error('Только авторизованные пользователи могут сохранять тесты.');
+      return;
+    }
 
+    // Проверка заполненности формы
     if (!testTitle.trim()) {
       toast.error('Пожалуйста, введите название теста.');
       return;
@@ -176,7 +192,7 @@ const EditTestPage = () => {
         return;
       }
       if (q.type === 'mc') {
-        if (!q.options || q.options.length < 2) {
+        if (!Array.isArray(q.options) || q.options.length < 2) {
           toast.error(`Добавьте как минимум два варианта ответа для вопроса №${i + 1}.`);
           return;
         }
@@ -202,7 +218,72 @@ const EditTestPage = () => {
       };
 
       const payload = {
-        method: 'general',
+        test_name: testTitle, // Убедитесь, что поле соответствует серверу
+        questions: questions.map(q => ({
+          type: q.type,
+          question: q.question,
+          answer: q.answer,
+          options: q.type === 'mc' ? q.options : null,
+          sentence: q.sentence ? q.sentence : ''
+        })),
+        lectureMaterials: lectureMaterials,
+      };
+
+      console.log('Отправляемые данные для сохранения теста:', payload);
+
+      const response = await fetch(`http://127.0.0.1:5000/api/tests/save/`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // // Обработка ответа как файла
+        // const blob = await response.blob();
+        // const contentDisposition = response.headers.get('Content-Disposition');
+        // let fileName = 'test.gift';
+        // if (contentDisposition && contentDisposition.includes('filename=')) {
+        //   fileName = contentDisposition.split('filename=')[1].replace(/"/g, '');
+        // }
+
+        // // Создание URL для скачивания файла
+        // const url = window.URL.createObjectURL(blob);
+        // const link = document.createElement('a');
+        // link.href = url;
+        // link.setAttribute('download', fileName); // имя файла
+        // document.body.appendChild(link);
+        // link.click();
+        // link.parentNode.removeChild(link);
+        // window.URL.revokeObjectURL(url); // Освобождение памяти
+
+        // toast.success('Тест успешно сохранен и файл GIFT скачан!');
+        navigate('/tests');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Не удалось сохранить тест. Пожалуйста, попробуйте снова.');
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении теста:', error);
+      toast.error(error.message || 'Не удалось сохранить тест. Пожалуйста, попробуйте снова.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Обработчик скачивания теста
+  const handleDownload = async () => {
+    setLoading(true);
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        // Возможно, для скачивания не требуется авторизация
+        // Если требуется, раскомментируйте следующую строку
+        // 'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      };
+
+      const payload = {
+        method: 'download',
         title: testTitle,
         questions: questions.map(q => ({
           type: q.type,
@@ -214,34 +295,64 @@ const EditTestPage = () => {
         lectureMaterials: lectureMaterials,
       };
 
-      console.log('Отправляемые данные для обновления теста:', payload);
+      console.log('Отправляемые данные для скачивания теста:', payload);
 
-      const response = await fetch(`http://127.0.0.1:5000/api/tests/save/`, {
+      const response = await fetch(`http://127.0.0.1:5000/api/tests/download/`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        const result = await response.json();
-        toast.success('Тест успешно обновлен!');
-        navigate('/tests');
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let fileName = 'test.gift';
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+          fileName = contentDisposition.split('filename=')[1].replace(/"/g, '');
+        }
+
+        // Создание URL для скачивания файла
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName); // имя файла
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url); // Освобождение памяти
+
+        toast.success('Файл GIFT успешно скачан!');
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Не удалось обновить тест. Пожалуйста, попробуйте снова.');
+        throw new Error(errorData.detail || 'Не удалось скачать тест. Пожалуйста, попробуйте снова.');
       }
     } catch (error) {
-      console.error('Ошибка при обновлении теста:', error);
-      toast.error(error.message || 'Не удалось обновить тест. Пожалуйста, попробуйте снова.');
+      console.error('Ошибка при скачивании теста:', error);
+      toast.error(error.message || 'Не удалось скачать тест. Пожалуйста, попробуйте снова.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Обработчик выгрузки теста (реализуйте по необходимости)
+  const handleUpload = () => {
+    // Здесь вы можете реализовать логику выгрузки теста
+    // Например, открытие модального окна для загрузки файла
+    // Или отправку данных на другой API-эндпоинт
+
+    // Пример уведомления
+    toast.info('Функция "Выгрузить" пока не реализована.');
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-md shadow-md mt-10">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">Редактирование Теста</h1>
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (isLoggedIn) handleSave();
+        }}
+      >
         {/* Название Теста */}
         <div className="mb-6">
           <label className="block text-gray-700 dark:text-gray-200">Название теста:</label>
@@ -309,7 +420,7 @@ const EditTestPage = () => {
               {q.type === 'mc' && (
                 <div className="mb-4">
                   <label className="block text-gray-700 dark:text-gray-200">Варианты ответа:</label>
-                  {q.options?.map((opt, optIdx) => (
+                  {Array.isArray(q.options) && q.options.map((opt, optIdx) => (
                     <div key={optIdx} className="flex items-center mb-2">
                       <input
                         type="text"
@@ -357,16 +468,44 @@ const EditTestPage = () => {
           </button>
         </div>
 
-        {/* Кнопка для обновления теста */}
-        <button
-          type="submit"
-          className="w-full py-2 mt-6 bg-blue-500 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={loading}
-        >
-          {loading ? 'Сохранить...' : 'Сохранить тест'}
-        </button>
+        
+
+        {/* Кнопки действия */}
+        <div className="flex flex-col md:flex-row justify-between mt-6 space-y-4 md:space-y-0">
+          {/* Кнопка для сохранения теста (только для авторизованных пользователей) */}
+          {isLoggedIn && (
+            <button
+              type="submit"
+              className="w-full md:w-1/3 py-2 bg-blue-500 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-blue-600"
+              disabled={loading}
+            >
+              {loading ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          )}
+
+          {/* Кнопка для скачивания теста */}
+          <button
+            type="button"
+            className="w-full md:w-1/3 py-2 bg-green-500 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 hover:bg-green-600"
+            onClick={handleDownload}
+            disabled={loading}
+          >
+            {loading ? 'Скачивание...' : 'Скачать'}
+          </button>
+
+          {/* Кнопка для выгрузки теста */}
+          <button
+            type="button"
+            className="w-full md:w-1/3 py-2 bg-purple-500 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 hover:bg-purple-600"
+            onClick={handleUpload}
+            disabled={loading}
+          >
+            Выгрузить
+          </button>
+        </div>
       </form>
 
+      {/* Контейнер для уведомлений */}
       <ToastContainer />
     </div>
   );

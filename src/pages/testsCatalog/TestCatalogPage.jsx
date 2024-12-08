@@ -1,57 +1,63 @@
-// src/pages/testCatalog/TestCatalog.jsx
 import MiniLoadingSpinner from '../../components/loading/MiniLoadingSpinner';
 import React, { useEffect, useState } from 'react';
-// import axios from 'axios'; // Отключите axios, если используете мок-данные
+import axios from 'axios'; // Подключаем axios для работы с API
 
 const TestCatalog = () => {
-  const [tests, setTests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [tests, setTests] = useState([]);  // Состояние для хранения данных о тестах
+  const [loading, setLoading] = useState(true);  // Состояние для отслеживания загрузки
+  const [error, setError] = useState(null);  // Состояние для хранения ошибок
+
+  // Замените это на ваш реальный токен
+  const token = localStorage.getItem('accessToken')
 
   useEffect(() => {
-    // Используем мок-данные вместо запроса к API
-    const mockData = [
-      {
-        id: 1,
-        title: "Основы программирования",
-        link: "https://forms.gle/example1",
-        questions: [
-          { id: 1, question: "Что такое переменная?" },
-          { id: 2, question: "Какие типы данных вы знаете?" }
-        ]
-      },
-      {
-        id: 2,
-        title: "Продвинутый Python",
-        link: "https://forms.gle/example2",
-        questions: [
-          { id: 1, question: "Что такое декоратор?" },
-          { id: 2, question: "Как использовать генераторы?" }
-        ]
-      },
-      // Другие тесты...
-    ];
+    // Выполняем запрос к API для получения списка тестов
+    const fetchTests = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/api/tests/', {
+          headers: {
+            'Authorization': `Bearer ${token}` // Добавляем токен в заголовки
+          }
+        });
+        // После получения данных обновляем состояние
+        setTests(response.data.files);
+        setLoading(false); // Завершаем загрузку
+      } catch (err) {
+        setError("Ошибка при загрузке тестов.");
+        setLoading(false); // Завершаем загрузку
+      }
+    };
 
-    // Симуляция задержки загрузки данных
-    setTimeout(() => {
-      setTests(mockData);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    fetchTests(); // Вызываем функцию для загрузки тестов
+  }, []); // Пустой массив зависимостей, чтобы запрос выполнялся только при монтировании компонента
 
-  const handleExportTest = (test) => {
-    const fileData = JSON.stringify(test, null, 2);
-    const blob = new Blob([fileData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+  const handleExportTest = async (test) => {
+    try {
+      // Отправляем запрос для скачивания теста по его названию
+      const response = await axios.get(`http://127.0.0.1:5000/api/tests/download/${test}`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Добавляем токен в заголовки
+        },
+        responseType: 'blob', // Ожидаем файл в виде blob
+      });
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${test.title.replace(/\s+/g, '_')}_test.json`;
-    link.click();
+      // Создаем URL для скачивания
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+
+      // Создаем элемент <a> для скачивания файла
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${test.replace(/\s+/g, '_')}_test.gift`); // Устанавливаем имя файла для скачивания
+      document.body.appendChild(link);
+      link.click(); // Инициализируем скачивание
+      document.body.removeChild(link); // Убираем ссылку после скачивания
+    } catch (err) {
+      setError("Ошибка при выгрузке теста.");
+    }
   };
 
   if (loading) {
-    return <MiniLoadingSpinner />;
+    return <MiniLoadingSpinner />;  // Показываем индикатор загрузки
   }
 
   if (error) {
@@ -68,13 +74,13 @@ const TestCatalog = () => {
       <ul className="space-y-4">
         {tests.map(test => (
           <li
-            key={test.id}
+            key={test}
             className="p-4 border rounded-md dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex justify-between items-center"
           >
-            <span className="text-gray-800 dark:text-gray-200">{test.title}</span>
+            <span className="text-gray-800 dark:text-gray-200">{test}</span>
             <div className="flex gap-4">
               <a
-                href={test.link}
+                href={`https://example.com/tests/${test}`} // Укажите правильный URL для теста
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 dark:text-blue-400 hover:underline"
