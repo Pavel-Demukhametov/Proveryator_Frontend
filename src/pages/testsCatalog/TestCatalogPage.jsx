@@ -1,6 +1,7 @@
 import MiniLoadingSpinner from '../../components/loading/MiniLoadingSpinner';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios'; // Подключаем axios для работы с API
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 
 const TestCatalog = () => {
   const [tests, setTests] = useState([]);  // Состояние для хранения данных о тестах
@@ -12,9 +13,10 @@ const TestCatalog = () => {
 
   useEffect(() => {
     // Выполняем запрос к API для получения списка тестов
+    var url = `${API_BASE_URL}/tests/`;
     const fetchTests = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/api/tests/', {
+        const response = await axios.get(url, {
           headers: {
             'Authorization': `Bearer ${token}` // Добавляем токен в заголовки
           }
@@ -34,7 +36,8 @@ const TestCatalog = () => {
   const handleExportTest = async (test) => {
     try {
       // Отправляем запрос для скачивания теста по его названию
-      const response = await axios.get(`http://127.0.0.1:5000/api/tests/download/${test}`, {
+      url = `${API_BASE_URL}/tests/download/${test}`;
+      const response = await axios.get(url, {
         headers: {
           'Authorization': `Bearer ${token}` // Добавляем токен в заголовки
         },

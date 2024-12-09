@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 
 const EditTestPage = () => {
   const location = useLocation();
@@ -230,8 +231,8 @@ const EditTestPage = () => {
       };
 
       console.log('Отправляемые данные для сохранения теста:', payload);
-
-      const response = await fetch(`http://127.0.0.1:5000/api/tests/save/`, {
+      var url = `${API_BASE_URL}/tests/save/`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
@@ -296,8 +297,8 @@ const EditTestPage = () => {
       };
 
       console.log('Отправляемые данные для скачивания теста:', payload);
-
-      const response = await fetch(`http://127.0.0.1:5000/api/tests/download/`, {
+      var url = `${API_BASE_URL}/tests/download/`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),

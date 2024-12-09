@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import MiniLoadingSpinner from '../../components/loading/MiniLoadingSpinner';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 
 const UploadLecturePage = () => {
   const [lectureFile, setLectureFile] = useState(null);
@@ -39,9 +40,9 @@ const UploadLecturePage = () => {
       formData.append('method', 'Device');
       formData.append('file', lectureFile);
       formData.append('materials', lectureMaterials.trim());
-
+      const url = `${API_BASE_URL}/upload/`;
       const response = await axios.post(
-        'http://127.0.0.1:5000/api/upload',
+        url,
         formData,
         { headers }
       );

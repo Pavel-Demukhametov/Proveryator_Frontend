@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import InputField from '../../components/inputField/InputField';
-
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 const LoginPage = () => {
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
@@ -17,10 +17,10 @@ const LoginPage = () => {
   const handleInputChange = (e) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
   };
-
+  const url = `${API_BASE_URL}/login/`;
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:5000/api/login/', loginData) // Добавлен слэш
+    axios.post(url, loginData) // Добавлен слэш
     .then(response => {
       const { access_token, refresh_token, token_type } = response.data; 
       localStorage.setItem('accessToken', access_token);

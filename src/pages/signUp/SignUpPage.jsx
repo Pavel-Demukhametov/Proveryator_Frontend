@@ -7,6 +7,7 @@ import SubmitButton from '../../components/submitButton/submitButton';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -19,9 +20,9 @@ const SignUpPage = () => {
   const handleInputChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
-
+  var url = `${API_BASE_URL}/login/`;
   const handleLogin = (email, password) => { // Изменены параметры на email и password
-    axios.post('http://127.0.0.1:5000/api/login/', { email, password }) // Изменен URL
+    axios.post(url, { email, password }) // Изменен URL
       .then(response => {
         const { access_token, token_type } = response.data;
         localStorage.setItem('accessToken', access_token);
@@ -51,8 +52,8 @@ const SignUpPage = () => {
       email: userData.email.trim(),
       password: userData.password,
     };
-
-    axios.post('http://127.0.0.1:5000/api/register/', requestData) // Изменен порт
+    var url = `${API_BASE_URL}/register/`;
+    axios.post(url, requestData) // Изменен порт
       .then(response => {
         if (response.status === 201) {
           toast.success("Регистрация прошла успешно!");

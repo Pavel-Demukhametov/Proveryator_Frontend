@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import CustomCheckbox from '../../components/customCheckbox/CustomCheckbox';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
 
 const CreateTestPage = () => {
   const location = useLocation();
@@ -189,8 +190,9 @@ const CreateTestPage = () => {
       };
       console.log(payload);
 
+      const url = `${API_BASE_URL}/tests/create/`;
       // Отправка данных на сервер
-      const response = await fetch('http://127.0.0.1:5000/api/tests/create/', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
