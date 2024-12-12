@@ -44,7 +44,7 @@ const WelcomePage = () => {
                   Проверятор
                 </h1>
                 <div className="text-2xl  dark:text-trueWhite text-customGray pb-12 " style={{ maxWidth: '600px' }}>
-                  Веб-приложение для создания тестов по лекции.
+                  Веб-приложение для создания тестов.
                 </div>
               </div>
               <div className="flex flex-col gap-2 pt-6 w-full md:w-1/2  ">

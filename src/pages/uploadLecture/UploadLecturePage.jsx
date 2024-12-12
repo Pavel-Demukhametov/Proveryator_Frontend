@@ -1,3 +1,5 @@
+// UploadLecturePage.jsx
+
 import React, { useState } from 'react';
 import axios from 'axios';
 import MiniLoadingSpinner from '../../components/loading/MiniLoadingSpinner';
@@ -18,13 +20,9 @@ const UploadLecturePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!lectureFile) {
-      setErrorMessage('Пожалуйста, загрузите файл лекции.');
-      return;
-    }
-
-    if (!lectureMaterials.trim()) {
-      setErrorMessage('Пожалуйста, введите материалы лекции.');
+    // Проверка: хотя бы одно из полей должно быть заполнено
+    if (!lectureFile && !lectureMaterials.trim()) {
+      setErrorMessage('Пожалуйста, загрузите файл лекции или введите материалы лекции.');
       return;
     }
 
@@ -34,12 +32,22 @@ const UploadLecturePage = () => {
     try {
       const headers = {
         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        // При отправке FormData заголовок Content-Type должен быть установлен автоматически
       };
 
       const formData = new FormData();
       formData.append('method', 'Device');
-      formData.append('file', lectureFile);
-      formData.append('materials', lectureMaterials.trim());
+      
+      // Добавляем файл, только если он выбран
+      if (lectureFile) {
+        formData.append('file', lectureFile);
+      }
+      
+      // Добавляем материалы лекции, только если они введены
+      if (lectureMaterials.trim()) {
+        formData.append('materials', lectureMaterials.trim());
+      }
+
       const url = `${API_BASE_URL}/upload/`;
       const response = await axios.post(
         url,
@@ -64,7 +72,7 @@ const UploadLecturePage = () => {
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label htmlFor="lectureFile" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-            Загрузить файл лекции:
+            Загрузить файл лекции (опционально):
           </label>
           <input
             type="file"
@@ -72,12 +80,13 @@ const UploadLecturePage = () => {
             name="lectureFile"
             className="w-full px-4 py-2 border rounded-md focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             onChange={handleFileChange}
+            accept=".docx,.pdf,.txt" // Ограничение типов файлов по необходимости
           />
         </div>
 
         <div className="mb-4">
           <label htmlFor="lectureMaterials" className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-            Материалы лекции:
+            Материалы лекции (опционально):
           </label>
           <textarea
             id="lectureMaterials"
@@ -85,6 +94,8 @@ const UploadLecturePage = () => {
             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
             value={lectureMaterials}
             onChange={(e) => setLectureMaterials(e.target.value)}
+            placeholder="Введите материалы лекции или оставьте это поле пустым"
+            rows={6}
           ></textarea>
         </div>
 

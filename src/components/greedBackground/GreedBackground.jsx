@@ -1,18 +1,38 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import 'tailwindcss/tailwind.css';
 
+// Функция для проверки, является ли устройство мобильным
+const isMobileDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 const GreedBackGround = ({ className }) => {
   const mountRef = useRef(null);
+  const [isWebGLSupported, setIsWebGLSupported] = useState(true);
   const fixedHeight = 900;
+
   useEffect(() => {
+    // Если устройство мобильное, не инициализируем WebGL
+    if (isMobileDevice()) {
+      setIsWebGLSupported(false);
+      return;
+    }
+
+    // Проверка поддержки WebGL
+    if (!WEBGL.isWebGLAvailable()) {
+      setIsWebGLSupported(false);
+      return;
+    }
+
+    let renderer, scene, camera, animationId;
 
 
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / fixedHeight, 0.2, 100);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / fixedHeight, 0.2, 100);
     camera.position.z = 5;
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setClearColor(new THREE.Color('#242933'));
     renderer.setSize(window.innerWidth, fixedHeight);
     mountRef.current.appendChild(renderer.domElement);
@@ -283,15 +303,38 @@ const GreedBackGround = ({ className }) => {
     };
   }, []);
 
-  return      <div
-  ref={mountRef}
-  className={`flex justify-center items-center ${className}`}
-  style={{
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }}
-/>
+  return (
+    <div
+      ref={mountRef}
+      className={`flex justify-center items-center ${className}`}
+      style={{
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {!isWebGLSupported && (
+        <div className="text-center text-white p-4">
+          Ваше устройство не поддерживает WebGL или вы используете мобильное устройство. Пожалуйста, используйте настольный браузер для лучшего опыта.
+        </div>
+      )}
+    </div>
+  );
+};
 
+
+// Дополнительная функция для проверки поддержки WebGL
+const WEBGL = {
+  isWebGLAvailable: function () {
+    try {
+      const canvas = document.createElement('canvas');
+      return !!(
+        window.WebGLRenderingContext &&
+        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+      );
+    } catch (e) {
+      return false;
+    }
+  },
 };
 
 export default GreedBackGround;

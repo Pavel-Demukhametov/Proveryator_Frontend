@@ -17,12 +17,28 @@ const SignUpPage = () => {
     password: '',
   });
 
+  // Добавляем состояние для отслеживания ошибок пароля
+  const [passwordError, setPasswordError] = useState('');
+
   const handleInputChange = (e) => {
-    setUserData({ ...userData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Обновляем данные пользователя
+    setUserData({ ...userData, [name]: value });
+
+    // Если изменяется пароль, проверяем его длину
+    if (name === 'password') {
+      if (value.length < 6) {
+        setPasswordError('Пароль должен быть не менее 6 символов.');
+      } else {
+        setPasswordError('');
+      }
+    }
   };
-  var url = `${API_BASE_URL}/login/`;
+
+  var loginUrl = `${API_BASE_URL}/login/`;
   const handleLogin = (email, password) => { // Изменены параметры на email и password
-    axios.post(url, { email, password }) // Изменен URL
+    axios.post(loginUrl, { email, password }) // Изменен URL
       .then(response => {
         const { access_token, token_type } = response.data;
         localStorage.setItem('accessToken', access_token);
@@ -47,17 +63,34 @@ const SignUpPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // Проверка на название теста
+    if (!userData.username.trim()) {
+      toast.error('Пожалуйста, введите логин.');
+      return;
+    }
+
+    if (!userData.email.trim()) {
+      toast.error('Пожалуйста, введите email.');
+      return;
+    }
+
+    // Проверка на длину пароля
+    if (userData.password.length < 6) {
+      toast.error('Пароль должен быть не менее 6 символов.');
+      return;
+    }
+
     const requestData = {
       username: userData.username.trim(),
       email: userData.email.trim(),
       password: userData.password,
     };
-    var url = `${API_BASE_URL}/register/`;
-    axios.post(url, requestData) // Изменен порт
+    var registerUrl = `${API_BASE_URL}/register/`;
+    axios.post(registerUrl, requestData) // Изменен URL
       .then(response => {
         if (response.status === 201) {
           toast.success("Регистрация прошла успешно!");
-          handleLogin(userData.email, userData.password); // Передаем email
+          handleLogin(userData.email, userData.password); // Передаем email и password для входа
         } else {
           toast.error(response.data.detail || "Ошибка регистрации");
         }
@@ -78,10 +111,43 @@ const SignUpPage = () => {
       <div className="w-full max-w-[1300px] ">
         <main className="mt-[10%] w-full h-[100vh] ">
           <form className="max-w-[400px] mx-auto p-5 shadow-xl rounded-xl " onSubmit={handleSubmit}>
-            <InputField label="Email" name="email" type="email" required value={userData.email} onChange={handleInputChange} />
-            <InputField label="Логин" name="username"  type="text" required  value={userData.username} onChange={handleInputChange}  />
-            <InputField label="Пароль" name="password" type="password" required value={userData.password} onChange={handleInputChange} />
-            <button type="submit" className="w-full  bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300 p-2.5">Зарегистрироваться</button>
+            <InputField 
+              label="Email" 
+              name="email" 
+              type="email" 
+              required 
+              value={userData.email} 
+              onChange={handleInputChange} 
+            />
+            <InputField 
+              label="Логин" 
+              name="username"  
+              type="text" 
+              required  
+              value={userData.username} 
+              onChange={handleInputChange}  
+            />
+            <InputField 
+              label="Пароль" 
+              name="password" 
+              type="password" 
+              required 
+              value={userData.password} 
+              onChange={handleInputChange} 
+              // Добавляем атрибут minLength для HTML-валидации
+              minLength={6}
+            />
+            {/* Отображаем ошибку пароля, если есть */}
+            {passwordError && (
+              <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+            )}
+            <button 
+              type="submit" 
+              className={`w-full bg-[#89abfc] dark:bg-[#4b6cb7] hover:bg-[#4b6cb7] dark:hover:bg-[#89abfc] text-customGray dark:text-trueWhite hover:text-trueWhite dark:hover:text-customGray font-semibold rounded-md transition duration-300 p-2.5`}
+              disabled={userData.password.length < 6} // Отключаем кнопку, если пароль короткий
+            >
+              Зарегистрироваться
+            </button>
           </form>
         </main>
       </div>

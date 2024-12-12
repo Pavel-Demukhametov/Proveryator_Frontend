@@ -17,7 +17,7 @@ const Header = () => {
           <span className="font-bold text-transparent bg-clip-text gradient-text">Проверятор</span>
           </p>
         </Link> 
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-2">
             <Switcher12 />
 
             <ProfileButton/>
