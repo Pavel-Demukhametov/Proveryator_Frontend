@@ -8,12 +8,12 @@ const TestCatalog = () => {
   const [loading, setLoading] = useState(true);  // Состояние для отслеживания загрузки
   const [error, setError] = useState(null);  // Состояние для хранения ошибок
 
-  // Замените это на ваш реальный токен
+  // Получаем токен из localStorage
   const token = localStorage.getItem('accessToken')
 
   useEffect(() => {
     // Выполняем запрос к API для получения списка тестов
-    var url = `${API_BASE_URL}/tests/`;
+    const url = `${API_BASE_URL}/tests/`;
     const fetchTests = async () => {
       try {
         const response = await axios.get(url, {
@@ -22,7 +22,7 @@ const TestCatalog = () => {
           }
         });
         // После получения данных обновляем состояние
-        setTests(response.data.files);
+        setTests(response.data); // Изменено с response.data.files на response.data
         setLoading(false); // Завершаем загрузку
       } catch (err) {
         setError("Ошибка при загрузке тестов.");
@@ -31,13 +31,13 @@ const TestCatalog = () => {
     };
 
     fetchTests(); // Вызываем функцию для загрузки тестов
-  }, []); // Пустой массив зависимостей, чтобы запрос выполнялся только при монтировании компонента
+  }, [token]); // Добавляем token в зависимости, чтобы обновлять при его изменении
 
   const handleExportTest = async (test) => {
     try {
       // Отправляем запрос для скачивания теста по его названию
-      url = `${API_BASE_URL}/tests/download/${test}`;
-      const response = await axios.get(url, {
+      const downloadUrl = `${API_BASE_URL}/tests/download/${test}`;
+      const response = await axios.get(downloadUrl, {
         headers: {
           'Authorization': `Bearer ${token}` // Добавляем токен в заголовки
         },

@@ -48,7 +48,7 @@ const ProfileButton = ({ buttonColor }) => {
         />
       </button>
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg rounded-lg">
+        <div className="absolute dark:text-white right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg rounded-lg">
           {accessToken ? (
             <button
               className={`block w-full py-2 px-4 ${buttonColor}`}
