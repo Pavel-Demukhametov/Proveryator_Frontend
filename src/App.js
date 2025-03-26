@@ -10,7 +10,7 @@ import CreateTestPage from './pages/createTest/CreateTestPage';
 import TestCatalogPage from './pages/testsCatalog/TestCatalogPage';
 import TestInfoPage from './pages/testInfo/TestInfoPage';
 import EditTestPage from './pages/editTest/EditTestPage';
-
+import TranscriptionPage from './pages/transcription/TranscriptionPage';
 
 const requireAuthAndRole = (component, role) => {
   const isAuthenticated = localStorage.getItem('accessToken');
@@ -38,6 +38,7 @@ function App() {
             {/* <Route path="test/" element={<Catalog />} /> */}
             <Route path="test/:id" element={<TestInfoPage />} />
             <Route path="upload/"element={ <UploadLecturePage/>} />
+            <Route path="upload/transcription"element={ <TranscriptionPage/>} />
             <Route path="create/test"element={ <CreateTestPage/>} />
             <Route path="tests"element={ <TestCatalogPage/>} />
             <Route path="/tests/edit" element={<EditTestPage />} />

@@ -219,7 +219,7 @@ const EditTestPage = () => {
       };
 
       const payload = {
-        test_name: testTitle, // Убедитесь, что поле соответствует серверу
+        test_name: testTitle, 
         questions: questions.map(q => ({
           type: q.type,
           question: q.question,
@@ -278,9 +278,7 @@ const EditTestPage = () => {
     try {
       const headers = {
         'Content-Type': 'application/json',
-        // Возможно, для скачивания не требуется авторизация
-        // Если требуется, раскомментируйте следующую строку
-        // 'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+
       };
 
       const payload = {
@@ -335,15 +333,7 @@ const EditTestPage = () => {
     }
   };
 
-  // Обработчик выгрузки теста (реализуйте по необходимости)
-  const handleUpload = () => {
-    // Здесь вы можете реализовать логику выгрузки теста
-    // Например, открытие модального окна для загрузки файла
-    // Или отправку данных на другой API-эндпоинт
 
-    // Пример уведомления
-    toast.info('Функция "Выгрузить" пока не реализована.');
-  };
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-md shadow-md mt-10">
@@ -494,15 +484,6 @@ const EditTestPage = () => {
             {loading ? 'Скачивание...' : 'Скачать'}
           </button>
 
-          {/* Кнопка для выгрузки теста */}
-          <button
-            type="button"
-            className="w-full md:w-1/3 py-2 bg-purple-500 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 hover:bg-purple-600"
-            onClick={handleUpload}
-            disabled={loading}
-          >
-            Выгрузить
-          </button>
         </div>
       </form>
 

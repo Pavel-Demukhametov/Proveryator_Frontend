@@ -1,19 +1,21 @@
-// src/pages/CreateTestPage.jsx 
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import CustomCheckbox from '../../components/customCheckbox/CustomCheckbox';
 import 'react-toastify/dist/ReactToastify.css';
-import { API_BASE_URL } from '../../config/config'; // Импортируем конечные точки
+import { API_BASE_URL } from '../../config/config';
 
 const CreateTestPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const lectureData = location.state;
 
   const [testTitle, setTestTitle] = useState('');
+  
+  // Состояния для работы с типами теста
+  const [testTypes, setTestTypes] = useState([]);
+
+  // Остальные состояния
   const [creationMethod, setCreationMethod] = useState('general');
   const [totalQuestions, setTotalQuestions] = useState('');
   const [themes, setThemes] = useState([]);
@@ -25,7 +27,6 @@ const CreateTestPage = () => {
   const [newThemeSentences, setNewThemeSentences] = useState('');
   const [isAddingTheme, setIsAddingTheme] = useState(false);
 
-
   useEffect(() => {
     if (lectureData) {
       console.log('Полученные данные от предыдущей страницы:', lectureData);
@@ -33,10 +34,10 @@ const CreateTestPage = () => {
         const initializedThemes = lectureData.segments.map((theme) => ({
           keyword: theme.keyword,
           sentences: theme.sentences,
-          isIncluded: false, // По умолчанию темы не включены (для метода byThemes)
-          multipleChoiceCount: '', // Для метода byThemes
-          openAnswerCount: '',     // Для метода byThemes
-          relatedSentences: theme.sentences.join(' '), // Объединённые предложения
+          isIncluded: false,
+          multipleChoiceCount: '',
+          openAnswerCount: '',
+          relatedSentences: theme.sentences.join(' '),
         }));
         setThemes(initializedThemes);
         console.log('Инициализированные темы:', initializedThemes);
@@ -90,43 +91,18 @@ const CreateTestPage = () => {
   };
 
   const handleThemeQuestionCountChange = (id, count, type) => {
-    if (type === 'openAnswerCount') {
-      if (count === '' || (/^\d+$/.test(count) && parseInt(count, 10) >= 0)) {
-        setThemes((prevThemes) =>
-          prevThemes.map((theme) =>
-            theme.keyword === id
-              ? { ...theme, [type]: count }
-              : theme
-          )
-        );
-      } else {
-        setThemes((prevThemes) =>
-          prevThemes.map((theme) =>
-            theme.keyword === id
-              ? { ...theme, [type]: '0' }
-              : theme
-          )
-        );
-      }
+    if (count === '' || (/^\d+$/.test(count) && parseInt(count, 10) >= 0)) {
+      setThemes((prevThemes) =>
+        prevThemes.map((theme) =>
+          theme.keyword === id ? { ...theme, [type]: count } : theme
+        )
+      );
     } else {
-      // multipleChoiceCount может быть >= 0
-      if (count === '' || (/^\d+$/.test(count) && parseInt(count, 10) >= 0)) {
-        setThemes((prevThemes) =>
-          prevThemes.map((theme) =>
-            theme.keyword === id
-              ? { ...theme, [type]: count }
-              : theme
-          )
-        );
-      } else {
-        setThemes((prevThemes) =>
-          prevThemes.map((theme) =>
-            theme.keyword === id
-              ? { ...theme, [type]: '0' }
-              : theme
-          )
-        );
-      }
+      setThemes((prevThemes) =>
+        prevThemes.map((theme) =>
+          theme.keyword === id ? { ...theme, [type]: '0' } : theme
+        )
+      );
     }
   };
 
@@ -153,7 +129,7 @@ const CreateTestPage = () => {
       return;
     }
 
-    if (themes.some(theme => theme.keyword === newThemeKeyword.trim())) {
+    if (themes.some((theme) => theme.keyword === newThemeKeyword.trim())) {
       toast.error('Тема с таким ключевым словом уже существует.');
       return;
     }
@@ -167,7 +143,7 @@ const CreateTestPage = () => {
       relatedSentences: newThemeSentences.trim(),
     };
 
-    setThemes(prevThemes => [...prevThemes, newTheme]);
+    setThemes((prevThemes) => [...prevThemes, newTheme]);
     setNewThemeKeyword('');
     setNewThemeSentences('');
     setIsAddingTheme(false);
@@ -177,7 +153,6 @@ const CreateTestPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Проверка на название теста
     if (!testTitle.trim()) {
       toast.error('Пожалуйста, введите название теста.');
       return;
@@ -191,7 +166,6 @@ const CreateTestPage = () => {
         return;
       }
 
-      // Проверка наличия хотя бы одного вопроса в каждой теме
       for (let theme of selectedThemes) {
         const mcCount = parseInt(theme.multipleChoiceCount, 10) || 0;
         const oaCount = parseInt(theme.openAnswerCount, 10) || 0;
@@ -199,15 +173,11 @@ const CreateTestPage = () => {
           toast.error(`Для темы "${theme.keyword}" необходимо указать хотя бы одно количество вопросов.`);
           return;
         }
-
-        // Дополнительная проверка на отрицательные значения
         if (mcCount < 0 || oaCount < 0) {
           toast.error(`Количество вопросов в теме "${theme.keyword}" не может быть отрицательным.`);
           return;
         }
       }
-
-      // Формирование данных для отправки на сервер
       selectedThemes = selectedThemes.map((theme) => ({
         keyword: theme.keyword,
         sentences: theme.sentences,
@@ -215,11 +185,9 @@ const CreateTestPage = () => {
         openAnswerCount: parseInt(theme.openAnswerCount, 10) || 0,
       }));
     } else if (creationMethod === 'general') {
-      // В случае метода 'general'
       const mcCount = parseInt(multipleChoiceCount, 10) || 0;
       const oaCount = parseInt(openAnswerCount, 10) || 0;
 
-      // Проверка, что хотя бы одно количество больше 0
       if (mcCount <= 0 && oaCount <= 0) {
         toast.error('Необходимо указать хотя бы одно количество вопросов: с одним правильным ответом или с открытым ответом.');
         return;
@@ -230,7 +198,6 @@ const CreateTestPage = () => {
         return;
       }
 
-      // В случае 'general' отправляем все темы с их предложениями
       selectedThemes = themes.map((theme) => ({
         keyword: theme.keyword,
         sentences: theme.sentences,
@@ -247,16 +214,17 @@ const CreateTestPage = () => {
         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       };
 
+
       const payload = {
         method: creationMethod,
         title: testTitle,
         multipleChoiceCount: creationMethod === 'general' ? parseInt(multipleChoiceCount, 10) || 0 : undefined,
         openAnswerCount: creationMethod === 'general' ? parseInt(openAnswerCount, 10) || 0 : undefined,
-        themes: selectedThemes, // Теперь включает keyword и sentences
+        themes: selectedThemes,
         lectureMaterials: lectureData ? lectureData.materials : undefined,
       };
 
-      console.log('Отправляемый payload:', payload); // Для отладки
+      console.log('Отправляемый payload:', payload);
 
       const url = `${API_BASE_URL}/tests/create/`;
       const response = await fetch(url, {
@@ -285,11 +253,10 @@ const CreateTestPage = () => {
     if (creationMethod === 'general') {
       return 'Автоматически создадутся выбранное количество вопросов. Необходимо указать хотя бы одно количество вопросов: с одним правильным ответом или с открытым ответом.';
     } else if (creationMethod === 'byThemes') {
-      return 'Вы можете создать вопросы по готовым ответам';
+      return 'Вы можете создать вопросы по предложениям включающие определённые термины';
     }
     return '';
   };
-
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-md shadow-md mt-10">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">Создание теста</h1>
@@ -309,7 +276,6 @@ const CreateTestPage = () => {
             required
           />
         </div>
-
         {/* Метод создания теста */}
         <div className="mb-6">
           <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
@@ -334,7 +300,7 @@ const CreateTestPage = () => {
                 checked={creationMethod === 'byThemes'}
                 onChange={handleCreationMethodChange}
               />
-              <span className="ml-2 text-gray-800 dark:text-gray-200">По ответам</span>
+              <span className="ml-2 text-gray-800 dark:text-gray-200">Термины</span>
             </label>
           </div>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{getHintText()}</p>
@@ -342,7 +308,7 @@ const CreateTestPage = () => {
 
         {(creationMethod === 'byThemes') && (
           <div className="mb-6 space-y-4">
-            <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">Темы теста:</label>
+            <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">Термины теста:</label>
 
             {/* Форма добавления новой темы */}
             <div className="mb-6">
@@ -352,7 +318,7 @@ const CreateTestPage = () => {
                   onClick={() => setIsAddingTheme(true)}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300"
                 >
-                  Добавить ответ
+                  Добавить термин
                 </button>
               ) : (
                 <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
@@ -364,7 +330,7 @@ const CreateTestPage = () => {
                       type="text"
                       id="newThemeKeyword"
                       className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                      placeholder="Введите ответ"
+                      placeholder="Введите термин"
                       value={newThemeKeyword}
                       onChange={(e) => setNewThemeKeyword(e.target.value)}
                     />
